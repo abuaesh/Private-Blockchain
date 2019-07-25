@@ -124,10 +124,27 @@ class Blockchain {
      * @param {*} signature 
      * @param {*} star 
      */
-    submitStar(address, message, signature, star) {
+    async submitStar(address, message, signature, star) {
         let self = this;
+        //1. Get the time from the message sent as a parameter example: `parseInt(message.split(':')[1])`
+        console.log('FROM INSIDE SUBMIT STAR:   \n'
+            + 'submitStar(address, message, signature, star)'
+            + 'submitStar(' + address + ', ' + message + ', ' + signature + ', ' + star + ')');
+        let messageTime = parseInt(message.split(':')[1]);
+        console.log('The message time is: ' + messageTime);
+        //2. Get the current time: `let currentTime = parseInt(new Date().getTime().toString().slice(0, -3));`
+        let currentTime = parseInt(new Date().getTime().toString().slice(0, -3));
+        //3. Check if the time elapsed is less than 5 minutes
+        let elapsedTime = currentTime - messageTime;
+        await (elapsedTime > 300000) 
+        //4. Veify the message with wallet address and signature: `bitcoinMessage.verify(message, address, signature)`
+        bitcoinMessage.verify(message, address, signature);
+        //5. Create the block and add it to the chain
+        let b = new BlockCClass.Block(message);
+        self._addBlock(b);
+        //6. Resolve with the block added.
         return new Promise(async (resolve, reject) => {
-            
+            resolve(b);
         });
     }
 
@@ -196,11 +213,14 @@ class Blockchain {
 
 module.exports.Blockchain = Blockchain;
 let bc = new Blockchain();
-console.log('A new blockchain is created. Here is the Genesis Block:\n'
+/*console.log('A new blockchain is created. Here is the Genesis Block:\n'
     + JSON.stringify(bc.getBlockByHeight(0)).toString('hex') + '\n\n')
 let b = new BlockClass.Block('Hi there! This is a new block');
 console.log('New Block Created:\n' + JSON.stringify(b).toString('hex') + '\n');
 bc._addBlock(b);
 console.log('Here is the added block:\n' + JSON.stringify(b).toString('hex') + '\n');
 
-b.validate();
+b.validate();*/
+
+let b = new BlockClass.Block('Hi there! This is a new block');
+bc.submitStar('87987676e8789f8766564d769708c09', 'Hi there!', '68655635e5890e98098796a8769709');
