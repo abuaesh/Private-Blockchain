@@ -36,7 +36,7 @@ class Blockchain {
     async initializeChain() {
         if( this.height === -1){
             let block = new BlockClass.Block({ data: 'Genesis Block' });
-            console.log('GENESIS BLOCK: ' + JSON.stringify(block));
+            //console.log('GENESIS BLOCK: ' + JSON.stringify(block));
             await this._addBlock(block);
         }
     }
@@ -63,32 +63,30 @@ class Blockchain {
      * Note: the symbol `_` in the method name indicates in the javascript convention 
      * that this method is a private method. 
      */
-    _addBlock(block) {
+    async _addBlock(block) {
         let self = this;
         //Assign the block's timestamp
         block.time = new Date().getTime();
 
         //Assign the block's height
-        //self.getChainHeight().then(h=>block.height=h+1);
-        //block.height = self.height + 1; 
         self.getChainHeight().then(h => {
-            console.log('this is resolved from get chain height: ' + h);
             block.height = h + 1;
+            console.log(JSON.stringify(block));
+
         });
-        
-        //console.log('FROM INSIDE _addBlock: block.height is ' + block.height);
+        console.log(JSON.stringify(block));
 
         //Assign the block's previous hash, if it is not Genesis block
-        if (block.height != 0) { //Make sure it is not Genesis
-            self.getBlockByHeight(block.height).then(b => {
+        if (block.height > 0) { //Make sure it is not Genesis
+            await self.getBlockByHeight(block.height).then(b => {
                 block.previousBlockHash = b.hash;
-                console.log('This was returned from getBlockByHeight: '+JSON.stringify(b));
-            });
+                console.log('This was returned from getBlockByHeight: ' + JSON.stringify(b));
+            }).catch(msg => console.log(msg));
             //block.previousBlockHash = b.hash;
         }
         block.hash = SHA256(JSON.stringify(block)).toString();
 
-        console.log('Here is the new block right after adding it to the BC:\n' + JSON.stringify(block).toString('hex') + '\n');
+        //console.log('Here is the new block right before adding it to the BC:\n' + JSON.stringify(block).toString('hex') + '\n');
 
         
         return new Promise(async (resolve, reject) => {
@@ -96,7 +94,7 @@ class Blockchain {
             if (self.chain.push(block)) {
                 self.height = self.height + 1;
                 console.log('Block added successfully. ');
-                console.log('Here is the new block right before adding it to the BC:\n' + JSON.stringify(block).toString('hex') + '\n');
+                //console.log('Here is the new block right after adding it to the BC:\n' + JSON.stringify(block).toString('hex') + '\n');
 
                 resolve(block);
             }
@@ -189,7 +187,7 @@ class Blockchain {
             let block = self.chain.filter(p => p.height === height)[0];
             //let block = self.chain[height];
             if (block) {
-                console.log('FROM INSIDE GETBLOCKBYHEIGHT: FOUND THE BLOCK---------------');
+                console.log('FROM INSIDE GETBLOCKBYHEIGHT: FOUND THE BLOCK---------------' + JSON.stringify(block));
                 resolve(block);
             } else {
                 console.log('FROM INSIDE GETBLOCKBYHEIGHT: NO BLOCK WITH HEIGHT = '+height+' ---------------');
@@ -240,14 +238,10 @@ console.log('Here is the added block:\n' + JSON.stringify(b).toString('hex') + '
 
 b.validate();*/
 
-let b = new BlockClass.Block('Hi there! This is a new block');
-//console.log('Here is the new block:\n' + JSON.stringify(b).toString('hex') + '\n');
-bc._addBlock(b);
-//console.log('Here is the added block:\n' + JSON.stringify(b).toString('hex') + '\n');
+let b1 = new BlockClass.Block('Block 1');
+bc._addBlock(b1);
 
-let b2 = new BlockClass.Block('H there! This is a new block');
-//console.log('Here is the new block:\n' + JSON.stringify(b2).toString('hex') + '\n');
+let b2 = new BlockClass.Block('Block 2');
 bc._addBlock(b2);
-//console.log('Here is the added block:\n' + JSON.stringify(b2).toString('hex') + '\n');
 
 //bc.submitStar('87987676e8789f8766564d769708c09', 'Hi there!', '68655635e5890e98098796a8769709');
