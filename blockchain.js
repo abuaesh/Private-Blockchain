@@ -63,7 +63,7 @@ class Blockchain {
      * Note: the symbol `_` in the method name indicates in the javascript convention 
      * that this method is a private method. 
      */
-    async _addBlock(block) {
+     _addBlock(block) {
         let self = this;
         //Assign the block's timestamp
         block.time = new Date().getTime();
@@ -78,7 +78,7 @@ class Blockchain {
 
         //Assign the block's previous hash, if it is not Genesis block
         if (block.height > 0) { //Make sure it is not Genesis
-            await self.getBlockByHeight(block.height).then(b => {
+            self.getBlockByHeight(block.height).then(b => {
                 block.previousBlockHash = b.hash;
                 console.log('This was returned from getBlockByHeight: ' + JSON.stringify(b));
             }).catch(msg => console.log(msg));
