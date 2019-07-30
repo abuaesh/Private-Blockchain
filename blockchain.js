@@ -63,33 +63,43 @@ class Blockchain {
      * Note: the symbol `_` in the method name indicates in the javascript convention 
      * that this method is a private method. 
      */
-     _addBlock(block) {
+      _addBlock(block) {
         let self = this;
-        //Assign the block's timestamp
-        block.time = new Date().getTime();
 
-        //Assign the block's height
-        self.getChainHeight().then(h => {
-            block.height = h + 1;
-            console.log(JSON.stringify(block));
+         return new Promise(async (resolve, reject) => {
 
-        });
-        console.log(JSON.stringify(block));
+            //Assign the block's timestamp
+            block.time = new Date().getTime();
 
-        //Assign the block's previous hash, if it is not Genesis block
-        if (block.height > 0) { //Make sure it is not Genesis
-            self.getBlockByHeight(block.height).then(b => {
-                block.previousBlockHash = b.hash;
-                console.log('This was returned from getBlockByHeight: ' + JSON.stringify(b));
-            }).catch(msg => console.log(msg));
-            //block.previousBlockHash = b.hash;
-        }
-        block.hash = SHA256(JSON.stringify(block)).toString();
+            //Assign the block's height
+            self.getChainHeight().then(h => {
+                block.height = h + 1;
+                
+                //if (block.height > 0) { //Make sure it is not Genesis before setting the previous block hash
+                self.getBlockByHeight(block.height - 1).then(b => {
 
-        //console.log('Here is the new block right before adding it to the BC:\n' + JSON.stringify(block).toString('hex') + '\n');
+                    if (block.height === 0) {//Genesis Block
+                        block.previousBlockHash = null;
+                        block.hash = SHA256(JSON.stringify(block)).toString();
+                        console.log(JSON.stringify(block));
+                    } else {
+                        block.previousBlockHash = b.hash;
+                        block.hash = SHA256(JSON.stringify(block)).toString();
+                        console.log(JSON.stringify(block));
+                    }
+                       
 
-        
-        return new Promise(async (resolve, reject) => {
+                }).catch(msg => {
+                        console.log(msg);
+                        
+                       
+                    });
+                //}
+                //block.previousBlockHash = b.hash;
+                
+
+            });
+            //console.log(JSON.stringify(block));
 
             if (self.chain.push(block)) {
                 self.height = self.height + 1;
@@ -187,10 +197,10 @@ class Blockchain {
             let block = self.chain.filter(p => p.height === height)[0];
             //let block = self.chain[height];
             if (block) {
-                console.log('FROM INSIDE GETBLOCKBYHEIGHT: FOUND THE BLOCK---------------' + JSON.stringify(block));
+                //console.log('FROM INSIDE GETBLOCKBYHEIGHT: FOUND THE BLOCK---------------' + JSON.stringify(block));
                 resolve(block);
             } else {
-                console.log('FROM INSIDE GETBLOCKBYHEIGHT: NO BLOCK WITH HEIGHT = '+height+' ---------------');
+                //console.log('FROM INSIDE GETBLOCKBYHEIGHT: NO BLOCK WITH HEIGHT = '+height+' ---------------');
 
                 resolve(null);
             }
