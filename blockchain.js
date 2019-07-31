@@ -63,57 +63,79 @@ class Blockchain {
      * Note: the symbol `_` in the method name indicates in the javascript convention 
      * that this method is a private method. 
      */
-      _addBlock(block) {
+       async _addBlock(block) {
         let self = this;
 
-         return new Promise(async (resolve, reject) => {
+           return new Promise(async (resolve, reject) => {
 
-            //Assign the block's timestamp
-            block.time = new Date().getTime();
+               //Assign the block's timestamp
+               block.time = new Date().getTime();
 
-            //Assign the block's height
-            self.getChainHeight().then(h => {
-                block.height = h + 1;
-                
-                //if (block.height > 0) { //Make sure it is not Genesis before setting the previous block hash
-                self.getBlockByHeight(block.height - 1).then(b => {
+               //Assign the block's height
+               self.getChainHeight().then(h => {
+                   block.height = h + 1;
 
-                    if (block.height === 0) {//Genesis Block
-                        block.previousBlockHash = null;
-                        block.hash = SHA256(JSON.stringify(block)).toString();
-                        console.log(JSON.stringify(block));
-                    } else {
-                        block.previousBlockHash = b.hash;
-                        block.hash = SHA256(JSON.stringify(block)).toString();
-                        console.log(JSON.stringify(block));
-                    }
-                       
+                   let previousBlockHeight = h;
+                   let resolve = false;
 
-                }).catch(msg => {
-                        console.log(msg);
-                        
-                       
-                    });
-                //}
-                //block.previousBlockHash = b.hash;
-                
+                   if (previousBlockHeight === -1) {//Genesis Block
 
-            });
-            //console.log(JSON.stringify(block));
+                       //previousBlockHeight = 0; //in case of Genesis this variable will not be used,
+                       //                            //just set it to a value that will resolve with getBlockByHeight
 
-            if (self.chain.push(block)) {
-                self.height = self.height + 1;
-                console.log('Block added successfully. ');
-                //console.log('Here is the new block right after adding it to the BC:\n' + JSON.stringify(block).toString('hex') + '\n');
+                       block.previousBlockHash = null;
+                       block.hash = SHA256(JSON.stringify(block)).toString();
+                       console.log('\nAdding the Genesis Block: \n' + JSON.stringify(block));
 
-                resolve(block);
-            }
-            else {
-                reject('Failed to add the block.')
-            }
+                       if (self.chain.push(block)) {
+                           self.height = self.height + 1
+                           console.log('Block added successfully. ');
+                           //console.log('Here is the new block right after adding it to the BC:\n' + JSON.stringify(block) + '\n');
+                           resolve = true;
+                           //resolve(block);
+                       } else {
+                           //reject('Could not add the new block: ' + JSON.stringify(block));
+                           resolve = false;
+                       }
+                   } else { //NOT GENESIS
 
+                       self.getBlockByHeight(previousBlockHeight).then(b => {
+
+                           //if(genesis == false)
+                           block.previousBlockHash = b.hash;
+
+
+                           block.hash = SHA256(JSON.stringify(block)).toString();
+                           console.log('\n' + JSON.stringify(block));
+
+                           if (self.chain.push(block)) {
+                               self.height = self.height + 1
+                               console.log('Block added successfully. ');
+                               //console.log('Here is the new block right after adding it to the BC:\n' + JSON.stringify(block) + '\n');
+
+                               //resolve(block);
+                               resolve = true;
+                           } else {
+                               //reject('Could not add the new block: ' + JSON.stringify(block));
+                               resolve = false;
+                           }
+                       }).catch(msg => {
+                           console.log(msg);
+                       }
+                       );
+                   }
+                   });
            
-        });
+             if(resolve === true) {
+                 //self.height = self.height + 1
+                 console.log('Block added successfully. ');
+                 //console.log('Here is the new block right after adding it to the BC:\n' + JSON.stringify(block) + '\n');
+
+                 await resolve(block);
+             } else {
+                 reject('Failed to add the block!\n\n');
+          }
+          });
     }
 
     /**
@@ -197,10 +219,10 @@ class Blockchain {
             let block = self.chain.filter(p => p.height === height)[0];
             //let block = self.chain[height];
             if (block) {
-                //console.log('FROM INSIDE GETBLOCKBYHEIGHT: FOUND THE BLOCK---------------' + JSON.stringify(block));
+                console.log('FROM INSIDE GETBLOCKBYHEIGHT: FOUND THE BLOCK---------------' + JSON.stringify(block));
                 resolve(block);
             } else {
-                //console.log('FROM INSIDE GETBLOCKBYHEIGHT: NO BLOCK WITH HEIGHT = '+height+' ---------------');
+                console.log('FROM INSIDE GETBLOCKBYHEIGHT: NO BLOCK WITH HEIGHT = '+height+' ---------------');
 
                 resolve(null);
             }
@@ -239,19 +261,15 @@ class Blockchain {
 
 module.exports.Blockchain = Blockchain;
 let bc = new Blockchain();
-/*console.log('A new blockchain is created. Here is the Genesis Block:\n'
-    + JSON.stringify(bc.getBlockByHeight(0)).toString('hex') + '\n\n')
-let b = new BlockClass.Block('Hi there! This is a new block');
-console.log('New Block Created:\n' + JSON.stringify(b).toString('hex') + '\n');
-bc._addBlock(b);
-console.log('Here is the added block:\n' + JSON.stringify(b).toString('hex') + '\n');
 
-b.validate();*/
 
 let b1 = new BlockClass.Block('Block 1');
 bc._addBlock(b1);
 
 let b2 = new BlockClass.Block('Block 2');
 bc._addBlock(b2);
+
+let b3 = new BlockClass.Block('Block 3');
+bc._addBlock(b3);
 
 //bc.submitStar('87987676e8789f8766564d769708c09', 'Hi there!', '68655635e5890e98098796a8769709');
