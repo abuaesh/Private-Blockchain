@@ -69,72 +69,62 @@ class Blockchain {
            return new Promise(async (resolve, reject) => {
 
                //Assign the block's timestamp
-               block.time = new Date().getTime();
+               block.time = new Date().getTime().toString().slice(0,-3);
 
                //Assign the block's height
-               self.getChainHeight().then(h => {
-                   block.height = h + 1;
+               //self.getChainHeight().then(h => {
+               let h = self.height;
+               self.height = self.height + 1;
+                block.height = h + 1;
 
-                   let previousBlockHeight = h;
-                   let resolve = false;
+                let previousBlockHeight = h;
 
-                   if (previousBlockHeight === -1) {//Genesis Block
+               if (previousBlockHeight === -1) {//Genesis Block
 
-                       //previousBlockHeight = 0; //in case of Genesis this variable will not be used,
-                       //                            //just set it to a value that will resolve with getBlockByHeight
+                   //previousBlockHeight = 0; //in case of Genesis this variable will not be used,
+                   //                            //just set it to a value that will resolve with getBlockByHeight
 
-                       block.previousBlockHash = null;
+                   block.previousBlockHash = null;
+                   block.hash = SHA256(JSON.stringify(block)).toString();
+                   console.log('\nAdding the Genesis Block: \n' + JSON.stringify(block));
+
+                   if (self.chain.push(block)) {
+                       //self.height = self.height + 1
+                       console.log('Block added successfully. ');
+                       //console.log('Here is the new block right after adding it to the BC:\n' + JSON.stringify(block) + '\n');
+                       resolve(block);
+                   } else {
+                       self.height -= 1;
+                       reject('Could not add the genesis block: ' + JSON.stringify(block));
+                   }
+               } else { //NOT GENESIS
+
+                   self.getBlockByHeight(previousBlockHeight).then(b => {
+
+                       //if(genesis == false)
+                       block.previousBlockHash = b.hash;
+
+
                        block.hash = SHA256(JSON.stringify(block)).toString();
-                       console.log('\nAdding the Genesis Block: \n' + JSON.stringify(block));
+                       console.log('\n' + JSON.stringify(block));
 
                        if (self.chain.push(block)) {
-                           self.height = self.height + 1
+                           //self.height = self.height + 1
                            console.log('Block added successfully. ');
                            //console.log('Here is the new block right after adding it to the BC:\n' + JSON.stringify(block) + '\n');
-                           resolve = true;
-                           //resolve(block);
+
+                           resolve(block);
+
                        } else {
-                           //reject('Could not add the new block: ' + JSON.stringify(block));
-                           resolve = false;
+                           self.height -= 1;
+                           reject('Could not add the new block: ' + JSON.stringify(block));
                        }
-                   } else { //NOT GENESIS
 
-                       self.getBlockByHeight(previousBlockHeight).then(b => {
-
-                           //if(genesis == false)
-                           block.previousBlockHash = b.hash;
-
-
-                           block.hash = SHA256(JSON.stringify(block)).toString();
-                           console.log('\n' + JSON.stringify(block));
-
-                           if (self.chain.push(block)) {
-                               self.height = self.height + 1
-                               console.log('Block added successfully. ');
-                               //console.log('Here is the new block right after adding it to the BC:\n' + JSON.stringify(block) + '\n');
-
-                               //resolve(block);
-                               resolve = true;
-                           } else {
-                               //reject('Could not add the new block: ' + JSON.stringify(block));
-                               resolve = false;
-                           }
-                       }).catch(msg => {
-                           console.log(msg);
-                       }
-                       );
-                   }
                    });
+               }
+                 
            
-             if(resolve === true) {
-                 //self.height = self.height + 1
-                 console.log('Block added successfully. ');
-                 //console.log('Here is the new block right after adding it to the BC:\n' + JSON.stringify(block) + '\n');
-
-                 await resolve(block);
-             } else {
-                 reject('Failed to add the block!\n\n');
-          }
+             
           });
     }
 
@@ -260,16 +250,17 @@ class Blockchain {
 }
 
 module.exports.Blockchain = Blockchain;
-let bc = new Blockchain();
+
+    let bc = new Blockchain();
 
 
-let b1 = new BlockClass.Block('Block 1');
-bc._addBlock(b1);
+    let b1 = new BlockClass.Block('Block 1');
+    bc._addBlock(b1);
 
-let b2 = new BlockClass.Block('Block 2');
-bc._addBlock(b2);
+    let b2 = new BlockClass.Block('Block 2');
+     bc._addBlock(b2);
 
-let b3 = new BlockClass.Block('Block 3');
-bc._addBlock(b3);
+    let b3 = new BlockClass.Block('Block 3');
+    bc._addBlock(b3);
 
-//bc.submitStar('87987676e8789f8766564d769708c09', 'Hi there!', '68655635e5890e98098796a8769709');
+    //bc.submitStar('87987676e8789f8766564d769708c09', 'Hi there!', '68655635e5890e98098796a8769709');
