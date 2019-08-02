@@ -66,7 +66,7 @@ class Blockchain {
        async _addBlock(block) {
         let self = this;
 
-           return new Promise(async (resolve, reject) => {
+           return new Promise((resolve, reject) => {
 
                //Assign the block's timestamp
                block.time = new Date().getTime().toString().slice(0,-3);
@@ -99,8 +99,8 @@ class Blockchain {
                    }
                } else { //NOT GENESIS
 
-                   self.getBlockByHeight(previousBlockHeight).then(b => {
-
+                   //self.getBlockByHeight(previousBlockHeight).then(b => {
+                   let b = self.chain[previousBlockHeight];
                        //if(genesis == false)
                        block.previousBlockHash = b.hash;
 
@@ -120,7 +120,7 @@ class Blockchain {
                            reject('Could not add the new block: ' + JSON.stringify(block));
                        }
 
-                   });
+                   //});
                }
                  
            
@@ -173,7 +173,7 @@ class Blockchain {
         let currentTime = parseInt(new Date().getTime().toString().slice(0, -3));
         //3. Check if the time elapsed is less than 5 minutes
         let elapsedTime = currentTime - messageTime;
-        await (elapsedTime > 300000) 
+        if (elapsedTime < 300000) 
         //4. Veify the message with wallet address and signature: `bitcoinMessage.verify(message, address, signature)`
         bitcoinMessage.verify(message, address, signature);
         //5. Create the block and add it to the chain
