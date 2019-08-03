@@ -33,11 +33,11 @@ class Blockchain {
      * You should use the `addBlock(block)` to create the Genesis Block
      * Passing as a data `{data: 'Genesis Block'}`
      */
-    async initializeChain() {
+     initializeChain() {
         if( this.height === -1){
             let block = new BlockClass.Block({ data: 'Genesis Block' });
             //console.log('GENESIS BLOCK: ' + JSON.stringify(block));
-            await this._addBlock(block);
+            this._addBlock(block);
         }
     }
 
@@ -72,59 +72,27 @@ class Blockchain {
                block.time = new Date().getTime().toString().slice(0,-3);
 
                //Assign the block's height
-               //self.getChainHeight().then(h => {
-               let h = self.height;
-               self.height = self.height + 1;
-                block.height = h + 1;
-
-                let previousBlockHeight = h;
+               //self.getChainHeight().then(previousBlockHeight => {
+               let previousBlockHeight = self.height;
+               block.height = previousBlockHeight + 1;
 
                if (previousBlockHeight === -1) {//Genesis Block
-
-                   //previousBlockHeight = 0; //in case of Genesis this variable will not be used,
-                   //                            //just set it to a value that will resolve with getBlockByHeight
-
                    block.previousBlockHash = null;
-                   block.hash = SHA256(JSON.stringify(block)).toString();
-                   console.log('\nAdding the Genesis Block: \n' + JSON.stringify(block));
-
-                   if (self.chain.push(block)) {
-                       //self.height = self.height + 1
-                       console.log('Block added successfully. ');
-                       //console.log('Here is the new block right after adding it to the BC:\n' + JSON.stringify(block) + '\n');
-                       resolve(block);
-                   } else {
-                       self.height -= 1;
-                       reject('Could not add the genesis block: ' + JSON.stringify(block));
-                   }
-               } else { //NOT GENESIS
-
+               } else {//Not Genesis Block
                    //self.getBlockByHeight(previousBlockHeight).then(b => {
                    let b = self.chain[previousBlockHeight];
-                       //if(genesis == false)
-                       block.previousBlockHash = b.hash;
-
-
-                       block.hash = SHA256(JSON.stringify(block)).toString();
-                       console.log('\n' + JSON.stringify(block));
-
-                       if (self.chain.push(block)) {
-                           //self.height = self.height + 1
-                           console.log('Block added successfully. ');
-                           //console.log('Here is the new block right after adding it to the BC:\n' + JSON.stringify(block) + '\n');
-
-                           resolve(block);
-
-                       } else {
-                           self.height -= 1;
-                           reject('Could not add the new block: ' + JSON.stringify(block));
-                       }
-
-                   //});
+                   block.previousBlockHash = b.hash;
                }
-                 
-           
-             
+                   block.hash = SHA256(JSON.stringify(block)).toString();
+                   console.log('\nAdding the new Block: \n' + JSON.stringify(block));
+
+               if (self.chain.push(block)) {
+                   self.height = self.height + 1
+                   console.log('Block added successfully. ');
+                   resolve(block);
+               } else {
+                   reject('Could not add the genesis block: ' + JSON.stringify(block));
+               }
           });
     }
 
@@ -139,7 +107,15 @@ class Blockchain {
     requestMessageOwnershipVerification(address) {
         return new Promise((resolve) => {
             //resolve(address:${new Date().getTime().toString().slice(0, -3)}:starRegistry;);
+            var keyPair = bitcoinMessage.ECPair.fromWIF(address); //address = '5KYZdUEo39z3FPrtuX2QbbwGnNP5zTd7yyr2SC1j299sBCnWjss'
+            var privateKey = keyPair.privateKey;
+            var message = 'This is an example of a signed message.';
 
+            var signature = bitcoinMessage.sign(message, privateKey, keyPair.compressed);
+            console.log(signature.toString('base64'));
+            // => 'G9L5yLFjti0QTHhPyFrZCT1V/MMnBtXKmoiKDZ78NDBjERki6ZTQZdSMCtkgoNmp17By9ItJr8o7ChX0XxY91nk='
+
+            resolve(bitcoinMessage.verify(message, address, signature)); //=> true
 
         });
     }
