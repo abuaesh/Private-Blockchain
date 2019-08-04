@@ -12,6 +12,8 @@ const SHA256 = require('crypto-js/sha256');
 const BlockClass = require('./block.js');
 const bitcoin = require('bitcoinjs-lib'); // v3.x.x
 const bitcoinMessage = require('bitcoinjs-message');
+const EC = require('elliptic').ec;
+const ec = new EC('secp256k1');
 
 
 class Blockchain {
@@ -108,19 +110,18 @@ class Blockchain {
      */
     requestMessageOwnershipVerification(address) {
         return new Promise((resolve) => {
-            //resolve(address:${new Date().getTime().toString().slice(0, -3)}:starRegistry;);
-            var keyPair = bitcoin.ECPair.fromWIF(address); //'5KYZdUEo39z3FPrtuX2QbbwGnNP5zTd7yyr2SC1j299sBCnWjss'
-            var privateKey = keyPair.privateKey;
-            var publicKey = keyPair.publicKey;
-            console.log('The private key is: ' + JSON.stringify(privateKey));
-            console.log('The public key is: ' + JSON.stringify(publicKey));
-
+            
+            //Sender
+            var keyPair = ec.genKeyPair();
+            var publicKey = keyPair.getPublic();
             var message = 'This is an example of a signed message.';
 
-            var signature = bitcoinMessage.sign(message, privateKey, keyPair.compressed);
-            console.log(signature.toString('base64'));
-            // => 'G9L5yLFjti0QTHhPyFrZCT1V/MMnBtXKmoiKDZ78NDBjERki6ZTQZdSMCtkgoNmp17By9ItJr8o7ChX0XxY91nk='
-            resolve(bitcoinMessage.verify(message, '5KYZdUEo39z3FPrtuX2QbbwGnNP5zTd7yyr2SC1j299sBCnWjss', signature)); //=> true
+            var digitalSignature = keyPair.sign(message);
+
+            //Reciever
+            publicKey = ec.keyFromPublic(publicKey, 'hex');
+            
+            resolve(publicKey.verify(message, digitalSignature));
         });
     }
 
