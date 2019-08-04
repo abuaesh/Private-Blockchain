@@ -111,17 +111,15 @@ class Blockchain {
     requestMessageOwnershipVerification(address) {
         return new Promise((resolve) => {
             
-            //Sender
-            var keyPair = ec.genKeyPair();
-            var publicKey = keyPair.getPublic();
-            var message = 'This is an example of a signed message.';
-
-            var digitalSignature = keyPair.sign(message);
-
-            //Reciever
-            publicKey = ec.keyFromPublic(publicKey, 'hex');
+           
+            //Message Format: 
+            //<WALLET_ADDRESS>:${new Date().getTime().toString().slice(0, -3)}:starRegistry
+            var message = JSON.stringify(address) + ':'
+                + new Date().getTime().toString().slice(0, -3) + ':'
+                + 'starRegistry';
+            //console.log(message);
+            resolve(message);
             
-            resolve(publicKey.verify(message, digitalSignature));
         });
     }
 
@@ -142,28 +140,51 @@ class Blockchain {
      * @param {*} signature 
      * @param {*} star 
      */
-    async submitStar(address, message, signature, star) {
+     submitStar(address, message, digitalSignature, star) {
         let self = this;
-        //1. Get the time from the message sent as a parameter example: `parseInt(message.split(':')[1])`
-        console.log('FROM INSIDE SUBMIT STAR:   \n'
-            + 'submitStar(address, message, signature, star)'
-            + 'submitStar(' + address + ', ' + message + ', ' + signature + ', ' + star + ')');
-        let messageTime = parseInt(message.split(':')[1]);
-        console.log('The message time is: ' + messageTime);
-        //2. Get the current time: `let currentTime = parseInt(new Date().getTime().toString().slice(0, -3));`
-        let currentTime = parseInt(new Date().getTime().toString().slice(0, -3));
-        //3. Check if the time elapsed is less than 5 minutes
-        let elapsedTime = currentTime - messageTime;
-        if (elapsedTime < 300000) 
-        //4. Veify the message with wallet address and signature: `bitcoinMessage.verify(message, address, signature)`
-        bitcoinMessage.verify(message, address, signature);
-        //5. Create the block and add it to the chain
-        let b = new BlockCClass.Block(message);
-        self._addBlock(b);
-        //6. Resolve with the block added.
-        return new Promise(async (resolve, reject) => {
-            resolve(b);
+        return new Promise((resolve, reject) => {
+
+            //1. Get the time from the message sent as a parameter example: `parseInt(message.split(':')[1])`
+            let messageTime = parseInt(message.split(':')[1]);
+            console.log('The message time is: ' + messageTime);
+            //2. Get the current time: `let currentTime = parseInt(new Date().getTime().toString().slice(0, -3));`
+            let currentTime = parseInt(new Date().getTime().toString().slice(0, -3));
+            console.log('The current time is: ' + currentTime);
+
+            //3. Check if the time elapsed is less than 5 minutes
+            let elapsedTime = currentTime - messageTime;
+            if (elapsedTime < 0) { //less than 5 minutes passed
+                reject('Time Elapsed is less than 5 minutes. Star is rejected');
+            } else {//Time span of 5 minutes elapsed -> Proceed to wallet address verification
+                let walletAddress = parseInt(message.split(':')[0]);
+                console.log('The extracted wallet address is: ' + JSON.stringify(walletAddress));
+                console.log('The given publicKey address is: ' + JSON.stringify(address));
+                if (walletAddress != address) {//Incorrect Wallet Address
+                    reject('Owner of the star is different from the given address');
+                } else {//Correct Wallet Address 
+                    //Verification of the signature  //Reciever
+                    let publicKey = ec.keyFromPublic(address, 'hex');
+                    if (publicKey.verify(message, digitalSignature)) {
+
+                        //5. Create the block and add it to the chain
+                        let b = new BlockClass.Block(message);
+                        self._addBlock(b).then(block =>
+                            //6. Resolve with the block added.
+                            resolve(block)).catch(msg => {
+                                console.log(msg);
+                                reject(msg);
+                            });
+
+                    } else {
+                        reject('Could not verify the signature!')
+                    }
+                }
+            }
+        
+        
+            
         });
+       
     }
 
     /**
@@ -246,5 +267,17 @@ module.exports.Blockchain = Blockchain;
 
     //bc.submitStar('87987676e8789f8766564d769708c09', 'Hi there!', '68655635e5890e98098796a8769709');
 */
-
-bc.requestMessageOwnershipVerification('5KYZdUEo39z3FPrtuX2QbbwGnNP5zTd7yyr2SC1j299sBCnWjss').then(msg => console.log(msg));
+//Testing Function: requestMessageOwnershipVerification(publicKey)
+//Sender
+var keyPair = ec.genKeyPair();
+var publicKey = keyPair.getPublic();
+bc.requestMessageOwnershipVerification(publicKey).then(msg => {
+    console.log(msg);
+    //Sign the test message
+    let digitalSignature = keyPair.sign(msg);
+    let star = 'star format for now';
+    bc.submitStar(publicKey, msg, digitalSignature, star).then(b =>
+        console.log('This block was added by submitStar: \n' + JSON.stringify(b))
+        ).catch(msg=>console.log(msg));
+}
+);
