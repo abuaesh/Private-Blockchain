@@ -88,14 +88,14 @@ class Blockchain {
                    block.previousBlockHash = b.hash;
                }
                    block.hash = SHA256(JSON.stringify(block)).toString();
-                   console.log('\nAdding the new Block: \n' + JSON.stringify(block));
+                   //console.log('\nAdding the new Block: \n' + JSON.stringify(block));
 
                if (self.chain.push(block)) {
                    self.height = self.height + 1
                    console.log('Block added successfully. ');
                    resolve(block);
                } else {
-                   reject('Could not add the genesis block: ' + JSON.stringify(block));
+                   reject('Could not add the block: ' + JSON.stringify(block));
                }
           });
     }
@@ -163,16 +163,20 @@ class Blockchain {
                 console.log('The extracted wallet address is: ' + walletAddress);
                 console.log('The given publicKey address is: ' + givenAddressStr);
                 if (walletAddress != givenAddressStr) {//Incorrect Wallet Address
-                    reject('Owner of the star is different from the given address');
+                    reject('Address in the verification message is different from the given address');
                 } else {//Correct Wallet Address 
                     //Verification of the signature  //Reciever
                     let publicKey = ec.keyFromPublic(address, 'hex');
                     if (publicKey.verify(message, digitalSignature)) {
 
-                        //5. Create the block and add it to the chain
-                        let b = new BlockClass.Block(message);
+                        //5.a Create the block with the star object recieved
+                        //such that each block contains information for only 1 star submission
+                        let blockData = message.split(':')[0] + message.split(':')[1]
+                            + ':' + JSON.stringify(star);
+                        let b = new BlockClass.Block(blockData);
+                        //5.b Add the created block to the chain, 
                         self._addBlock(b).then(block =>
-                            //6. Resolve with the block added.
+                            //6. Resolve with the block added. Or, reject with the error.
                             resolve(block)).catch(msg => {
                                 console.log(msg);
                                 reject(msg);
@@ -198,8 +202,16 @@ class Blockchain {
      */
     getBlockByHash(hash) {
         let self = this;
-        return new Promise((resolve, reject) => {
-           
+        return new Promise((resolve) => {
+            let block = self.chain.filter(p => p.hash === hash)[0];
+            if (block) {
+                console.log('FROM INSIDE GETBLOCKBYHASH: FOUND THE BLOCK---------------' + JSON.stringify(block));
+                resolve(block);
+            } else {
+                console.log('FROM INSIDE GETBLOCKBYHASH: NO BLOCK WITH HASH = ' + hash + ' ---------------');
+
+                resolve(null);
+            }
         });
     }
 
@@ -256,8 +268,10 @@ class Blockchain {
 
 module.exports.Blockchain = Blockchain;
 
-    let bc = new Blockchain();
-/*
+let bc = new Blockchain();
+
+//*
+//Testing function: _addBlock(data)
 
     let b1 = new BlockClass.Block('Block 1');
     bc._addBlock(b1);
@@ -267,10 +281,9 @@ module.exports.Blockchain = Blockchain;
 
     let b3 = new BlockClass.Block('Block 3');
     bc._addBlock(b3);
-
-    //bc.submitStar('87987676e8789f8766564d769708c09', 'Hi there!', '68655635e5890e98098796a8769709');
-*/
-//Testing Function: requestMessageOwnershipVerification(publicKey)
+//*/
+/*
+//Testing Functions: requestMessageOwnershipVerification(publicKey) and submitStar(...)
 //Sender
 var keyPair = ec.genKeyPair();
 var publicKey = keyPair.getPublic();
@@ -278,9 +291,14 @@ bc.requestMessageOwnershipVerification(publicKey).then(msg => {
     console.log(msg);
     //Sign the test message
     let digitalSignature = keyPair.sign(msg);
-    let star = 'star format for now';
+    let star = '"star" : {' +
+        '"dec": "68° 52\' 56.9",' +
+        '"ra": "16h 29m 1.0s",' +
+        '"story": "Testing the story 4"' +
+        '};';
     bc.submitStar(publicKey, msg, digitalSignature, star).then(b =>
         console.log('This block was added by submitStar: \n' + JSON.stringify(b))
         ).catch(msg=>console.log(msg));
 }
 );
+*/
