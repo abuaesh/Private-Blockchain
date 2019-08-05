@@ -73,6 +73,9 @@ class Blockchain {
            return new Promise((resolve, reject) => {
 
                //Assign the block's timestamp
+               //Date().getTime() returns the milliseconds since midnight January 1, 1970
+               //toString().slice(0,-3) gets rid of the milliseconds counter
+               //SO, The below statement returns the "seconds" since midnight January 1, 1970
                block.time = new Date().getTime().toString().slice(0,-3);
 
                //Assign the block's height
@@ -148,15 +151,16 @@ class Blockchain {
 
             //1. Get the time from the message sent as a parameter example: `parseInt(message.split(':')[1])`
             let messageTime = parseInt(message.split(':')[1]);
-            console.log('The message time is: ' + messageTime);
-            //2. Get the current time: `let currentTime = parseInt(new Date().getTime().toString().slice(0, -3));`
+            //console.log('The message time is: ' + messageTime);
+            //2. Get the current time: 
+            //currentTime is the "seconds" since midnight January 1, 1970:
             let currentTime = parseInt(new Date().getTime().toString().slice(0, -3));
-            console.log('The current time is: ' + currentTime);
+            //console.log('The current time is: ' + currentTime);
 
             //3. Check if the time elapsed is less than 5 minutes
             let elapsedTime = currentTime - messageTime;
-            if (elapsedTime >= 3000) { // 5 minutes(or more) have passed already
-                reject('Time Elapsed is less than 5 minutes. Star is rejected');
+            if (elapsedTime >= 300) { // 300 seconds = 5 minutes(or more) have passed already
+                reject('Time Elapsed is more than 5 minutes. Star is rejected');
             } else {//Less than 5 minutes elapsed -> Proceed to wallet address verification
                 let walletAddress = message.split(':')[0];
                 let givenAddressStr = JSON.stringify(address); //for comparison with the address in the given message string
@@ -171,10 +175,14 @@ class Blockchain {
 
                         //5.a Create the block with the star object recieved
                         //such that each block contains information for only 1 star submission
-                        let blockData = message.split(':')[0] + message.split(':')[1]
-                            + ':' + JSON.stringify(star);
+                        let blockData = message.split(':')[0] //the wallet address
+                            + ':' + message.split(':')[1] //the timestamp
+                            + ':' + (star); //the star object
+                        //console.log('The data added to the block is: \n' + blockData);
                         let b = new BlockClass.Block(blockData);
-                        //5.b Add the created block to the chain, 
+                        //5.b Add the created block to the chain,
+                        //console.log('The block is created and its body has: \n' + b.body);
+
                         self._addBlock(b).then(block =>
                             //6. Resolve with the block added. Or, reject with the error.
                             resolve(block)).catch(msg => {
@@ -205,10 +213,10 @@ class Blockchain {
         return new Promise((resolve) => {
             let block = self.chain.filter(p => p.hash === hash)[0];
             if (block) {
-                console.log('FROM INSIDE GETBLOCKBYHASH: FOUND THE BLOCK---------------' + JSON.stringify(block));
+                //console.log('FROM INSIDE GETBLOCKBYHASH: FOUND THE BLOCK---------------' + JSON.stringify(block));
                 resolve(block);
             } else {
-                console.log('FROM INSIDE GETBLOCKBYHASH: NO BLOCK WITH HASH = ' + hash + ' ---------------');
+                //console.log('FROM INSIDE GETBLOCKBYHASH: NO BLOCK WITH HASH = ' + hash + ' ---------------');
 
                 resolve(null);
             }
@@ -226,11 +234,10 @@ class Blockchain {
             let block = self.chain.filter(p => p.height === height)[0];
             //let block = self.chain[height];
             if (block) {
-                console.log('FROM INSIDE GETBLOCKBYHEIGHT: FOUND THE BLOCK---------------' + JSON.stringify(block));
+                //console.log('FROM INSIDE GETBLOCKBYHEIGHT: FOUND THE BLOCK---------------' + JSON.stringify(block));
                 resolve(block);
             } else {
-                console.log('FROM INSIDE GETBLOCKBYHEIGHT: NO BLOCK WITH HEIGHT = '+height+' ---------------');
-
+                //console.log('FROM INSIDE GETBLOCKBYHEIGHT: NO BLOCK WITH HEIGHT = '+height+' ---------------');
                 resolve(null);
             }
         });
@@ -238,15 +245,30 @@ class Blockchain {
 
     /**
      * This method will return a Promise that will resolve with an array of Stars objects existing in the chain 
-     * and are belongs to the owner with the wallet address passed as parameter.
-     * Remember the star should be returned decoded.
+     * and belong to the owner with the wallet address passed as parameter.
+     * Remember the star should be returned decoded. 
      * @param {*} address 
      */
     getStarsByWalletAddress (address) {
         let self = this;
         let stars = [];
         return new Promise((resolve, reject) => {
-            
+            //stars. = self.chain.filter(p => JSON.stringify(p.body).split(':')[0] == address)[0];
+            //stars = blocks.body.split(':')[2];
+            let bi = null;
+            for (var i = 0; i <= self.height; i++) {
+                bi = self.chain[i];
+                let pki = (bi.body.toString()).split(':')[0];
+                console.log('This is the PK extracted from block # ' + i + ':' + pki);
+                if (pki == address) {
+                    let arr = bi.body.split(':');
+                    let si = arr.slice(2,arr.length);
+                    console.log('The body for this block is: ' + si);
+                    stars.push(si);
+                }
+            }
+            console.log('The stars resulted from getStarsByWalletAddress: ' + stars);
+            resolve(stars);
         });
     }
 
@@ -268,19 +290,76 @@ class Blockchain {
 
 module.exports.Blockchain = Blockchain;
 
+
 let bc = new Blockchain();
-
 //*
-//Testing function: _addBlock(data)
+//Testing function: getStarsByWalletAddress()
+//First Add the stars using submitStar()
+var keyPair1 = ec.genKeyPair();
+var publicKey1 = keyPair1.getPublic();
+bc.requestMessageOwnershipVerification(publicKey1).then(msg1 => {
+    console.log(msg1);
+    //Sign the test message
+    let digitalSignature1 = keyPair1.sign(msg1);
+    let star1 = '"star1" : {' +
+        '"dec": "68° 52\' 56.9",' +
+        '"ra": "16h 29m 1.0s",' +
+        '"story": "Here is a star"' +
+        '};';
+    let star2 = '"star2" : {' +
+        '"dec": "68° 52\' 56.9",' +
+        '"ra": "16h 29m 1.0s",' +
+        '"story": "Here is another Star"' +
+        '};';
+    let star3 = '"star3" : {' +
+        '"dec": "68° 52\' 56.9",' +
+        '"ra": "16h 29m 1.0s",' +
+        '"story": "Here is yet another Star"' +
+        '};';
+    bc.submitStar(publicKey1, msg1, digitalSignature1, star1).then(b1 => {
+        //console.log('This block was added by submitStar: \n' + JSON.stringify(b1));
+        let pK1 = JSON.stringify(publicKey1);
+        console.log('Sending this key to getStarsByWallet: ' + pK1);
+        bc.submitStar(publicKey1, msg1, digitalSignature1, star2).then(b1 => {
+            bc.submitStar(publicKey1, msg1, digitalSignature1, star3).then(b1 => {
+                //All stars are added,
+                //Now Test the function getStarsByWalletAddress
+                bc.getStarsByWalletAddress(pK1).then(a1 => {
+                    console.log('The stars submitted by the owner: \n'
+                        + pK1 + '  are: ' + a1);
+                });
+            });
+        });
+    }
+    ).catch(msg => console.log(msg));
+}
+);
 
-    let b1 = new BlockClass.Block('Block 1');
-    bc._addBlock(b1);
+//*/
 
+/*
+//Testing function: _addBlock(data) and getBlockByHash
+let hash = null; //will be used to test the function getBlockByHash(hash)
+
+let b1 = new BlockClass.Block('Block 1');
+bc._addBlock(b1).then(b => {
+    hash = b.hash;
+    console.log('set the hash value');
     let b2 = new BlockClass.Block('Block 2');
-     bc._addBlock(b2);
+    bc._addBlock(b2).then(x => {
+        let b3 = new BlockClass.Block('Block 3');
+        bc._addBlock(b3).then(y => {
+            bc.getBlockByHash(hash).then(z => console.log(JSON.stringify(z)))
+                .catch(msg => console.log(msg));
+        });
 
-    let b3 = new BlockClass.Block('Block 3');
-    bc._addBlock(b3);
+        
+    });
+
+    
+});
+
+
 //*/
 /*
 //Testing Functions: requestMessageOwnershipVerification(publicKey) and submitStar(...)
@@ -301,4 +380,10 @@ bc.requestMessageOwnershipVerification(publicKey).then(msg => {
         ).catch(msg=>console.log(msg));
 }
 );
+*/
+
+/*
+//Experimenting with Date and Time
+//Returns the milliseconds since midnight January 1, 1970
+console.log(new Date().getTime().toString().slice(0,-3))
 */
