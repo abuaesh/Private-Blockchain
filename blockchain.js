@@ -141,7 +141,9 @@ class Blockchain {
      * @param {*} star 
      */
      submitStar(address, message, digitalSignature, star) {
-        let self = this;
+         let self = this;
+         console.log('This is the message recieved by submitStar'
+             + message);
         return new Promise((resolve, reject) => {
 
             //1. Get the time from the message sent as a parameter example: `parseInt(message.split(':')[1])`
@@ -153,13 +155,14 @@ class Blockchain {
 
             //3. Check if the time elapsed is less than 5 minutes
             let elapsedTime = currentTime - messageTime;
-            if (elapsedTime < 0) { //less than 5 minutes passed
+            if (elapsedTime >= 3000) { // 5 minutes(or more) have passed already
                 reject('Time Elapsed is less than 5 minutes. Star is rejected');
-            } else {//Time span of 5 minutes elapsed -> Proceed to wallet address verification
-                let walletAddress = parseInt(message.split(':')[0]);
-                console.log('The extracted wallet address is: ' + JSON.stringify(walletAddress));
-                console.log('The given publicKey address is: ' + JSON.stringify(address));
-                if (walletAddress != address) {//Incorrect Wallet Address
+            } else {//Less than 5 minutes elapsed -> Proceed to wallet address verification
+                let walletAddress = message.split(':')[0];
+                let givenAddressStr = JSON.stringify(address); //for comparison with the address in the given message string
+                console.log('The extracted wallet address is: ' + walletAddress);
+                console.log('The given publicKey address is: ' + givenAddressStr);
+                if (walletAddress != givenAddressStr) {//Incorrect Wallet Address
                     reject('Owner of the star is different from the given address');
                 } else {//Correct Wallet Address 
                     //Verification of the signature  //Reciever
