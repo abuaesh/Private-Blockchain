@@ -281,8 +281,13 @@ class Blockchain {
     validateChain() {
         let self = this;
         let errorLog = [];
-        return new Promise(async (resolve, reject) => {
-            
+        return new Promise((resolve) => {
+            for (var i = 0; i < self.chain.length; i++) {
+                self.chain[i].validate().then().catch(msg =>
+                    errorLog[i].push('Block #' + i +
+                        'cannot be validated. Reason: \n' + msg));
+            }
+            resolve(errorLog);
         });
     }
 
