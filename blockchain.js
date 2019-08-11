@@ -15,7 +15,6 @@ const bitcoinMessage = require('bitcoinjs-message');
 const EC = require('elliptic').ec;
 const ec = new EC('secp256k1');
 
-
 class Blockchain {
 
     /**
@@ -143,10 +142,9 @@ class Blockchain {
      * @param {*} signature 
      * @param {*} star 
      */
-     submitStar(address, message, digitalSignature, star) {
+     async submitStar(address, message, digitalSignature, star) {
          let self = this;
-         console.log('This is the message recieved by submitStar'
-             + message);
+         //console.log('This is the message recieved by submitStar: ' + message);
         return new Promise((resolve, reject) => {
 
             //1. Get the time from the message sent as a parameter example: `parseInt(message.split(':')[1])`
@@ -163,29 +161,32 @@ class Blockchain {
                 reject('Time Elapsed is more than 5 minutes. Star is rejected');
             } else {//Less than 5 minutes elapsed -> Proceed to wallet address verification
                 let walletAddress = message.split(':')[0];
-                let givenAddressStr = JSON.stringify(address); //for comparison with the address in the given message string
-                console.log('The extracted wallet address is: ' + walletAddress);
-                console.log('The given publicKey address is: ' + givenAddressStr);
-                if (walletAddress != givenAddressStr) {//Incorrect Wallet Address
-                    reject('Address in the verification message is different from the given address');
-                } else {//Correct Wallet Address 
+                //let givenAddressStr = address; //for comparison with the address in the given message string
+                console.log('The extracted wallet address is: ' + JSON.stringify(walletAddress));
+                console.log('The given address is: ' + JSON.stringify(address) + '\n');
+                //if (walletAddress !== address) {//Incorrect Wallet Address
+                  //  reject('Address in the verification message is different from the given address');
+                //} else {//Correct Wallet Address 
                     //Verification of the signature  //Reciever
                     let publicKey = ec.keyFromPublic(address, 'hex');
+                    console.log('The generated public key is: ' + publicKey);
                     if (publicKey.verify(message, digitalSignature)) {
-
+                        console.log('Was able to verify the signature...\n')
                         //5.a Create the block with the star object recieved
                         //such that each block contains information for only 1 star submission
                         let blockData = message.split(':')[0] //the wallet address
                             + ':' + message.split(':')[1] //the timestamp
                             + ':' + (star); //the star object
-                        //console.log('The data added to the block is: \n' + blockData);
+                        console.log('\nThe data added to the block is: \n' + blockData);
                         let b = new BlockClass.Block(blockData);
                         //5.b Add the created block to the chain,
-                        //console.log('The block is created and its body has: \n' + b.body);
+                        console.log('The block is created and its body has: \n' + b.body);
 
-                        self._addBlock(b).then(block =>
+                        self._addBlock(b).then(block => {
+                            console.log('All Good. Resolving the Block from submitStar...');
                             //6. Resolve with the block added. Or, reject with the error.
-                            resolve(block)).catch(msg => {
+                            resolve(block);
+                        }).catch(msg => {
                                 console.log(msg);
                                 reject(msg);
                             });
@@ -193,7 +194,7 @@ class Blockchain {
                     } else {
                         reject('Could not verify the signature!')
                     }
-                }
+                //}
             }
         
         
@@ -259,16 +260,16 @@ class Blockchain {
             for (var i = 0; i <= self.height; i++) {
                 bi = self.chain[i];
                 let pki = (bi.body.toString()).split(':')[0];
-                console.log('This is the PK extracted from block # ' + i + ':' + pki);
+                console.log('This is the PK extracted from block # ' + i + ':' + JSON.stringify(pki));
                 if (pki == address) {
                     let arr = bi.body.split(':');
                     let si = arr.slice(2,arr.length);
-                    console.log('The body for this block is: ' + si);
+                    console.log('The body for this block is: ' + JSON.stringify(si));
                     stars.push(si);
                 }
             }
             console.log('The stars resulted from getStarsByWalletAddress: ' + stars);
-            resolve(stars);
+            resolve(stars); 
         });
     }
 
@@ -295,51 +296,50 @@ class Blockchain {
 
 module.exports.Blockchain = Blockchain;
 
-
+/*
 let bc = new Blockchain();
-//*
+
 //Testing function: getStarsByWalletAddress()
 //First Add the stars using submitStar()
 var keyPair1 = ec.genKeyPair();
 var publicKey1 = keyPair1.getPublic();
 bc.requestMessageOwnershipVerification(publicKey1).then(msg1 => {
-    console.log(msg1);
-    //Sign the test message
-    let digitalSignature1 = keyPair1.sign(msg1);
-    let star1 = '"star1" : {' +
-        '"dec": "68° 52\' 56.9",' +
-        '"ra": "16h 29m 1.0s",' +
-        '"story": "Here is a star"' +
-        '};';
-    let star2 = '"star2" : {' +
-        '"dec": "68° 52\' 56.9",' +
-        '"ra": "16h 29m 1.0s",' +
-        '"story": "Here is another Star"' +
-        '};';
-    let star3 = '"star3" : {' +
-        '"dec": "68° 52\' 56.9",' +
-        '"ra": "16h 29m 1.0s",' +
-        '"story": "Here is yet another Star"' +
-        '};';
-    bc.submitStar(publicKey1, msg1, digitalSignature1, star1).then(b1 => {
-        //console.log('This block was added by submitStar: \n' + JSON.stringify(b1));
-        let pK1 = JSON.stringify(publicKey1);
-        console.log('Sending this key to getStarsByWallet: ' + pK1);
-        bc.submitStar(publicKey1, msg1, digitalSignature1, star2).then(b1 => {
-            bc.submitStar(publicKey1, msg1, digitalSignature1, star3).then(b1 => {
-                //All stars are added,
-                //Now Test the function getStarsByWalletAddress
-                bc.getStarsByWalletAddress(pK1).then(a1 => {
-                    console.log('The stars submitted by the owner: \n'
-                        + pK1 + '  are: ' + a1);
+    console.log(JSON.stringify(msg1).toString());
+        //Sign the test message
+        let digitalSignature1 = keyPair1.sign(msg1);
+        let star1 = '"star1" : {' +
+            '"dec": "68° 52\' 56.9",' +
+            '"ra": "16h 29m 1.0s",' +
+            '"story": "Here is a star"' +
+            '};';
+        let star2 = '"star2" : {' +
+            '"dec": "68° 52\' 56.9",' +
+            '"ra": "16h 29m 1.0s",' +
+            '"story": "Here is another Star"' +
+            '};';
+        let star3 = '"star3" : {' +
+            '"dec": "68° 52\' 56.9",' +
+            '"ra": "16h 29m 1.0s",' +
+            '"story": "Here is yet another Star"' +
+            '};';
+        bc.submitStar(publicKey1, msg1, digitalSignature1, star1).then(b1 => {
+            //console.log('This block was added by submitStar: \n' + JSON.stringify(b1));
+            let pK1 = JSON.stringify(publicKey1);
+            console.log('Sending this key to getStarsByWallet: ' + pK1);
+            bc.submitStar(publicKey1, msg1, digitalSignature1, star2).then(b1 => {
+                bc.submitStar(publicKey1, msg1, digitalSignature1, star3).then(b1 => {
+                    //All stars are added,
+                    //Now Test the function getStarsByWalletAddress
+                    bc.getStarsByWalletAddress(pK1).then(a1 => {
+                        console.log('The stars submitted by the owner: \n'
+                            + pK1 + '  are: ' + a1);
+                    });
                 });
             });
-        });
-    }
-    ).catch(msg => console.log(msg));
-}
-);
-
+        }
+        ).catch(msg => console.log(msg));
+    });
+    
 //*/
 
 /*
