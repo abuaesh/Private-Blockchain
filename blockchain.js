@@ -256,17 +256,18 @@ class Blockchain {
         return new Promise((resolve, reject) => {
             //stars. = self.chain.filter(p => JSON.stringify(p.body).split(':')[0] == address)[0];
             //stars = blocks.body.split(':')[2];
-            let bi = null;
-            for (var i = 0; i <= self.height; i++) {
-                bi = self.chain[i];
-                let pki = (bi.body.toString()).split(':')[0];
-                console.log('This is the PK extracted from block # ' + i + ':' + JSON.stringify(pki));
-                if (pki == address) {
-                    let arr = bi.body.split(':');
-                    let si = arr.slice(2,arr.length);
-                    console.log('The body for this block is: ' + JSON.stringify(si));
-                    stars.push(si);
-                }
+            for (var i = 0; i < self.height; i++) {
+                self.chain[i].getBData().then(bi => { //bi is the data from the ith block in the blockchain
+                    //pki is the primary key(address) extracted from the ith block's data
+                    let pki = (bi.toString()).split(':')[0];
+                    console.log('This is the PK extracted from block # ' + i + ':' + JSON.stringify(pki));
+                    if (pki == address) {
+                        let arr = bi.split(':');
+                        let si = arr.slice(2, arr.length);
+                        console.log('The body for this block is: ' + JSON.stringify(si));
+                        stars.push(si);
+                    }
+                }).catch(err=>console.log(err));
             }
             console.log('The stars resulted from getStarsByWalletAddress: ' + stars);
             resolve(stars); 
@@ -282,11 +283,25 @@ class Blockchain {
     validateChain() {
         let self = this;
         let errorLog = [];
+        let currentHash = null;
+        let previousHash = null;
         return new Promise((resolve) => {
+            //For each block in the chain:
             for (var i = 0; i < self.chain.length; i++) {
-                self.chain[i].validate().then().catch(msg =>
-                    errorLog[i].push('Block #' + i +
-                        'cannot be validated. Reason: \n' + msg));
+                //1. You should validate each block using`validateBlock`
+                self.chain[i].validate().then().catch(x =>
+                    errorLog.push('Block #' + i +
+                        ' cannot be validated. Reason: Individual block validation failed...'));
+                //2. Each Block should check the with the previousBlockHash
+                currentHash = self.chain[i].previousBlockHash;
+                if (currentHash !== previousHash) {
+                    console.log('Block Number ' + i + ' cannot be validated, because:\n' +
+                        currentHash + ' != ' + previousHash);
+                    errorLog.push('Block #' + i +
+                        'cannot be validated. Reason: Previous Hash not identical...\n');
+                    
+                }
+                previousHash = self.chain[i].hash;
             }
             resolve(errorLog);
         });
@@ -296,7 +311,7 @@ class Blockchain {
 
 module.exports.Blockchain = Blockchain;
 
-/*
+
 let bc = new Blockchain();
 
 //Testing function: getStarsByWalletAddress()
@@ -333,12 +348,20 @@ bc.requestMessageOwnershipVerification(publicKey1).then(msg1 => {
                     bc.getStarsByWalletAddress(pK1).then(a1 => {
                         console.log('The stars submitted by the owner: \n'
                             + pK1 + '  are: ' + a1);
+                        //Validate the chain after adding the blocks to it
+                        //Basically checks the hash of each block is correct(i.e. the hash was not tampered)
+                        //Also, check the previous hash is identical to the hash of the previous block
+                        bc.validateChain().then(errors => {
+                            console.log('\n\nThe Error Log from validate chain:\n' + errors)
+                        });
                     });
                 });
             });
         }
         ).catch(msg => console.log(msg));
-    });
+});
+
+
     
 //*/
 

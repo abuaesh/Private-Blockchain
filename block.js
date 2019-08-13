@@ -18,7 +18,7 @@ class Block {
 	constructor(data){
 		this.hash = null;                                           // Hash of the block
 		this.height = 0;                                            // Block Height (consecutive number of each block)
-		this.body = Buffer(JSON.stringify(data)).toString('hex');   // Will contain the transactions stored in the block, by default it will encode the data
+        this.body = Buffer(JSON.stringify(data)).toString('hex');   // Contains information about the star discoverer's address:timestamp:the star object
 		this.time = 0;                                              // Timestamp for the Block creation
 		this.previousBlockHash = null;                              // Reference to the previous Block Hash
     }
@@ -36,25 +36,34 @@ class Block {
      *  Note: to access the class values inside a Promise code you need to create an auxiliary value `let self = this;`
      */
     validate() {
+        /*
+         * Steps:
+         * 1. Store the current hash of the block in a variable.let currentHash = self.hash.
+         * 2. Make the hash of the block as null.self.hash = null.
+         * 3. Calculate the hash value again and store it in a different variable.let newHash = SHA256(JSON.stringify(self)).toString()
+         * 4. Assign the original hash value to the hash property of the block.self.hash = currentHash.
+         * 5. Compare the currentHash and newHash.
+        */
         let self = this;
         return new Promise((resolve, reject) => {
-
+            
             // Save in auxiliary variable the current block hash
             let blockHash = self.hash;
             self.hash = null;
 
             //In case of Genesis Block, I think you need to do something with the previousBlockHash
             if (self.height == 0) {
-                let OriginalPreviousBlockHash = self.previousBlockHash;
+                //let OriginalPreviousBlockHash = self.previousBlockHash;
                 self.previousBlockHash = null;
             }
            
             // Recalculate the hash of the Block
             const recalculatedHash = SHA256(JSON.stringify(self)).toString();
+            //Return the original hash back to the block to leave the block unchanged
+            self.hash = blockHash;
             // Comparing if the hashes changed
-            if (recalculatedHash == self.hash) {
+            if (recalculatedHash == blockHash) {
                 console.log('Block is valid');
-                //resolve('Block is valid');
                 resolve(true);
             }
 
@@ -115,7 +124,7 @@ class Block {
         return new Promise((resolve, reject) => {
 
             if (self.height > 0) {
-                console.log('Resolving getBData');
+                console.log('Resolving getBData' + JSON.stringify(dataObj));
                 resolve(dataObj);
             }
             else {
@@ -130,3 +139,9 @@ class Block {
 
 module.exports.Block = Block;                    // Exposing the Block class as a module
 
+let b = new Block('Trying a new block');
+/*b.getBData().then(block => {
+    console.log(JSON.stringify(block))
+}).catch(msg=>console.log(msg));*/
+
+//b.validate().then(x => console.log(x)).catch(x => console.log(x));
