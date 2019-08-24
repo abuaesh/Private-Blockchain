@@ -51,11 +51,11 @@ class Block {
             let blockHash = self.hash;
             self.hash = null;
 
-            //In case of Genesis Block, I think you need to do something with the previousBlockHash
+            /*/In case of Genesis Block, I think you need to do something with the previousBlockHash
             if (self.height == 0) {
                 //let OriginalPreviousBlockHash = self.previousBlockHash;
                 self.previousBlockHash = null;
-            }
+            }*/
            
             // Recalculate the hash of the Block
             const recalculatedHash = SHA256(JSON.stringify(self)).toString();
@@ -120,10 +120,8 @@ class Block {
         //Resolve with the data and make sure that you don't need to return the data for the genesis block 
         //OR reject with an error.
 
-
         return new Promise((resolve, reject) => {
-
-            if (self.height > 0) {
+            if (dataObj.data != "Genesis Block") {
                 console.log('Resolving getBData' + JSON.stringify(dataObj));
                 resolve(dataObj);
             }
@@ -131,6 +129,14 @@ class Block {
                 console.log('Rejecting getBData');
                 reject('Cannot return Genesis Block');
             }
+            /*if (self.height > 0) {
+                console.log('Resolving getBData' + JSON.stringify(dataObj));
+                resolve(dataObj);
+            }
+            else {
+                console.log('Rejecting getBData');
+                reject('Cannot return Genesis Block');
+            }*/
 
         });
     }
