@@ -37,8 +37,8 @@ class Blockchain {
      * You should use the `addBlock(block)` to create the Genesis Block
      * Passing as a data `{data: 'Genesis Block'}`
      */
-     initializeChain() {
-        if( this.height === -1){
+    initializeChain() {
+        if (this.height === -1) {
             let block = new BlockClass.Block({ data: 'Genesis Block' });
             //console.log('GENESIS BLOCK: ' + JSON.stringify(block));
             this._addBlock(block);
@@ -67,40 +67,40 @@ class Blockchain {
      * Note: the symbol `_` in the method name indicates in the javascript convention 
      * that this method is a private method. 
      */
-       async _addBlock(block) {
+    async _addBlock(block) {
         let self = this;
 
-           return new Promise((resolve, reject) => {
+        return new Promise((resolve, reject) => {
 
-               //Assign the block's timestamp
-               //Date().getTime() returns the milliseconds since midnight January 1, 1970
-               //toString().slice(0,-3) gets rid of the milliseconds counter
-               //SO, The below statement returns the "seconds" since midnight January 1, 1970
-               block.time = new Date().getTime().toString().slice(0,-3);
+            //Assign the block's timestamp
+            //Date().getTime() returns the milliseconds since midnight January 1, 1970
+            //toString().slice(0,-3) gets rid of the milliseconds counter
+            //SO, The below statement returns the "seconds" since midnight January 1, 1970
+            block.time = new Date().getTime().toString().slice(0, -3);
 
-               //Assign the block's height
-               //self.getChainHeight().then(previousBlockHeight => {
-               let previousBlockHeight = self.height;
-               block.height = previousBlockHeight + 1;
+            //Assign the block's height
+            //self.getChainHeight().then(previousBlockHeight => {
+            let previousBlockHeight = self.height;
+            block.height = previousBlockHeight + 1;
 
-               if (previousBlockHeight === -1) {//Genesis Block
-                   block.previousBlockHash = null;
-               } else {//Not Genesis Block
-                   //self.getBlockByHeight(previousBlockHeight).then(b => {
-                   let b = self.chain[previousBlockHeight];
-                   block.previousBlockHash = b.hash;
-               }
-                   block.hash = SHA256(JSON.stringify(block)).toString();
-                   //console.log('\nAdding the new Block: \n' + JSON.stringify(block));
+            if (previousBlockHeight === -1) {//Genesis Block
+                block.previousBlockHash = null;
+            } else {//Not Genesis Block
+                //self.getBlockByHeight(previousBlockHeight).then(b => {
+                let b = self.chain[previousBlockHeight];
+                block.previousBlockHash = b.hash;
+            }
+            block.hash = SHA256(JSON.stringify(block)).toString();
+            //console.log('\nAdding the new Block: \n' + JSON.stringify(block));
 
-               if (self.chain.push(block)) {
-                   self.height = self.height + 1
-                   console.log('Block added successfully. ');
-                   resolve(block);
-               } else {
-                   reject('Could not add the block: ' + JSON.stringify(block));
-               }
-          });
+            if (self.chain.push(block)) {
+                self.height = self.height + 1
+                console.log('Block added successfully. ');
+                resolve(block);
+            } else {
+                reject('Could not add the block: ' + JSON.stringify(block));
+            }
+        });
     }
 
     /**
@@ -113,14 +113,14 @@ class Blockchain {
      */
     requestMessageOwnershipVerification(address) {
         return new Promise((resolve) => {
-            
-           
+
+
             //Message Format: 
             //<WALLET_ADDRESS>:${new Date().getTime().toString().slice(0, -3)}:starRegistry
             var message = `${address}:${new Date().getTime().toString().slice(0, -3)}:starRegistry`;
-            console.log('FROM requestMessageOwnershipVerification::: '+message);
+            console.log('FROM requestMessageOwnershipVerification::: ' + message);
             resolve(message);
-            
+
         });
     }
 
@@ -141,70 +141,29 @@ class Blockchain {
      * @param {*} signature 
      * @param {*} star 
      */
-    submitStar(address, message, digitalSignature, star) {
-         let self = this;
-         //console.log('This is the message recieved by submitStar: ' + message);
-        return new Promise((resolve, reject) => {
-
-            //1. Get the time from the message sent as a parameter example: `parseInt(message.split(':')[1])`
-            let messageTime = parseInt(message.split(':')[1]);
-            //console.log('The message time is: ' + messageTime);
-            //2. Get the current time: 
-            //currentTime is the "seconds" since midnight January 1, 1970:
+    submitStar(address, message, signature, star) {
+        //Trying the code from Alex
+        let self = this;
+        return new Promise(async (resolve, reject) => { 
+            //Validate time
+            let msgTime = parseInt(message.split(':')[1]);
             let currentTime = parseInt(new Date().getTime().toString().slice(0, -3));
-            //console.log('The current time is: ' + currentTime);
-
-            //3. Check if the time elapsed is less than 5 minutes
-            let elapsedTime = currentTime - messageTime;
-            if (elapsedTime >= 300) { // 300 seconds = 5 minutes(or more) have passed already
-                reject('Time Elapsed is more than 5 minutes. Star is rejected');
-            } else {//Less than 5 minutes elapsed -> Proceed to wallet address verification
-                let walletAddress = message.split(':')[0];
-                //let givenAddressStr = address; //for comparison with the address in the given message string
-                console.log('The extracted wallet address is: ' + walletAddress);
-                console.log('The given address is: ' + address + '\n');
-                if (walletAddress != address) {//Incorrect Wallet Address
-                    reject('Address in the verification message is different from the given address');
-                } else {//Correct Wallet Address 
-                    console.log('Correct wallet addresses...\n');
-                    //Verification of the signature  //Reciever
-                    //let publicKey = ec.keyFromPublic(address, 'hex');
-                    //console.log('The generated public key is: ' + publicKey);
-                    //if (publicKey.verify(message, digitalSignature)) {
-                    if (bitcoinMessage.verify(message, address, digitalSignature)) {
-                        console.log('Was able to verify the signature...\n')
-                        //5.a Create the block with the star object recieved
-                        //such that each block contains information for only 1 star submission
-                        let blockData = message.split(':')[0] //the wallet address
-                            + ':' + message.split(':')[1] //the timestamp
-                            + ':' + (star); //the star object
-                        console.log('\nThe data added to the block is: \n' + blockData);
-                        let b = new BlockClass.Block(blockData);
-                        //5.b Add the created block to the chain,
-                        b.getBData().then(bData => {
-                        console.log('The block is created and its body has: \n' + bData);
-
-                        self._addBlock(b).then(block => {
-                            console.log('All Good. Resolving the Block from submitStar...');
-                            //6. Resolve with the block added. Or, reject with the error.
-                            resolve(block);
-                            //return block;
-                        });
-                        }).catch(msg => {
-                                console.log(msg);
-                                reject(msg);
-                            });
-
-                    } else {
-                        reject('Could not verify the signature!')
-                    }
-                }
+            if ((msgTime + (5 * 60)) >= currentTime) {
+                reject(new Error('Date expired.'));
             }
-        
-        
-            
+
+            //Validate signature
+            try {
+                await bitcoinMessage.verify(message, address, signature);
+            } catch (err) {
+                reject('Invalid signature.');
+            }
+
+            //Add block
+            let block = new BlockClass.Block({ owner: address, star: star });
+            let addedBlock = await self._addBlock(block);
+            resolve(addedBlock);
         });
-       
     }
 
     /**
@@ -254,7 +213,7 @@ class Blockchain {
      * Remember the star should be returned decoded. 
      * @param {*} address 
      */
-    getStarsByWalletAddress (address) {
+    getStarsByWalletAddress(address) {
         let self = this;
         let stars = [];
         return new Promise((resolve, reject) => {
@@ -278,7 +237,7 @@ class Blockchain {
                 }).catch(err => console.log('Error from getStarsByWalletAddress: ' + err));
             }
             console.log('The stars resulted from getStarsByWalletAddress: ' + stars);
-            resolve(stars); 
+            resolve(stars);
         });
     }
 
@@ -307,7 +266,7 @@ class Blockchain {
                         currentHash + ' != ' + previousHash);
                     errorLog.push('Block #' + i +
                         'cannot be validated. Reason: Previous Hash not identical...\n');
-                    
+
                 }
                 previousHash = self.chain[i].hash;
             }
@@ -319,9 +278,40 @@ class Blockchain {
 
 module.exports.Blockchain = Blockchain;
 
-
+/*
 let bc = new Blockchain();
 
+//START TEST==========================================================================================================
+
+var keyPair = bitcoin.ECPair.fromWIF('5KYZdUEo39z3FPrtuX2QbbwGnNP5zTd7yyr2SC1j299sBCnWjss')
+var privateKey = keyPair.privateKey
+var address = 'bc1qluzh2029z4kljvfe3jsz9dk0rd4l6chyh3sdl3'
+//var message = `${address} : B : C`
+bc.requestMessageOwnershipVerification(address).then( message => {
+
+    //var message = 'This is an example of a signed message.'
+
+    var signature =  bitcoinMessage.sign(message, privateKey, keyPair.compressed)
+    console.log(signature.toString('base64'))
+    // => 'G9L5yLFjti0QTHhPyFrZCT1V/MMnBtXKmoiKDZ78NDBjERki6ZTQZdSMCtkgoNmp17By9ItJr8o7ChX0XxY91nk='
+
+    //console.log(bitcoinMessage.verify(message, address, signature))
+    // => true
+
+    let star = '"star1" : {' +
+        '"dec": "68° 52\' 56.9",' +
+        '"ra": "16h 29m 1.0s",' +
+        '"story": "Here is a star"' +
+        '};';
+    bc.submitStar(address, message, signature, star)
+        .then(star => {
+            console.log('submitStar returned successfully')
+        })
+        .catch(err => console.log(`submitStar failed due to the following error: ${err}`));
+});
+//END TEST==========================================================================================================
+
+/*
 //Testing function: getStarsByWalletAddress()
 //First Add the stars using submitStar()
 //var keyPair1 = ec.genKeyPair();
@@ -350,15 +340,15 @@ bc.requestMessageOwnershipVerification(publicKey).then(msg1 => {
             '"ra": "16h 29m 1.0s",' +
             '"story": "Here is yet another Star"' +
         '};';
-        
- 
+
+
         bc.submitStar(publicKey, msg1, digitalSignature, star1).then(b1 => {
             //console.log('This block was added by submitStar: \n' + JSON.stringify(b1));
-            
-            
+
+
             bc.submitStar(publicKey, msg1, digitalSignature, star2).then(b1 => {
                 bc.submitStar(publicKey, msg1, digitalSignature, star3).then(b1 => {
-                    
+
                     //All stars are added,
                     //Now Test the function getStarsByWalletAddress
                     bc.getStarsByWalletAddress(publicKey).then(a1 => {
@@ -379,7 +369,7 @@ bc.requestMessageOwnershipVerification(publicKey).then(msg1 => {
 });
 
 
-    
+
 //*/
 
 /*
@@ -398,10 +388,10 @@ bc._addBlock(b1).then(b => {
                 .catch(msg => console.log(msg));
         });
 
-        
+
     });
 
-    
+
 });
 
 
