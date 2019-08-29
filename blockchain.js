@@ -148,21 +148,25 @@ class Blockchain {
             //Validate time
             let msgTime = parseInt(message.split(':')[1]);
             let currentTime = parseInt(new Date().getTime().toString().slice(0, -3));
-            if ((msgTime + (5 * 60)) >= currentTime) {
+            if ((msgTime + (5 * 60)) <= currentTime) {
                 reject(new Error('Date expired.'));
-            }
+            } else {
 
-            //Validate signature
-            try {
-                await bitcoinMessage.verify(message, address, signature);
-            } catch (err) {
-                reject('Invalid signature.');
+                //Validate signature
+                try {
+                    await bitcoinMessage.verify(message, address, signature);
+                } catch (err) {
+                    reject('Invalid signature.');
+                }
+                //Add block
+                try {
+                    let block = new BlockClass.Block({ owner: address, star: star });
+                    let addedBlock = await self._addBlock(block);
+                    resolve(addedBlock);
+                } catch (err) {
+                    reject('Could not add the star.');
+                }
             }
-
-            //Add block
-            let block = new BlockClass.Block({ owner: address, star: star });
-            let addedBlock = await self._addBlock(block);
-            resolve(addedBlock);
         });
     }
 
@@ -223,14 +227,14 @@ class Blockchain {
                 self.chain[i].getBData().then(bi => {
                     //bi is the data from the ith block in the blockchain
                     //pki is the primary key(address) extracted from the ith block's data
-                    let pki = bi.split(':')[0];
+                    let pki = bi.owner;
                     console.log('This is the PK extracted from block # '
                         + i + ':' + pki);
                     if (pki == address) {
                         console.log("\n\nFound a star matching the given address!\n\n")
-                        //Extract the star information from the block's body
-                        let arr = bi.split(':');
-                        let si = arr.slice(2, arr.length);
+                            //Extract the star information from the block's body 
+                            //(Because each block contains only 1 star)
+                        let si = bi.star;
                         console.log('The body for this block is: ' + si);
                         stars.push(si);
                     }
@@ -289,6 +293,8 @@ var address = 'bc1qluzh2029z4kljvfe3jsz9dk0rd4l6chyh3sdl3'
 //var message = `${address} : B : C`
 bc.requestMessageOwnershipVerification(address).then( message => {
 
+    //THE FOLLOWING ARE COPIED FROM: 
+    //https://github.com/bitcoinjs/bitcoinjs-message
     //var message = 'This is an example of a signed message.'
 
     var signature =  bitcoinMessage.sign(message, privateKey, keyPair.compressed)
