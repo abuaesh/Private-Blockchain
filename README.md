@@ -77,7 +77,7 @@ At this point we are ready to run our project for first time, use the command: `
 
 You can check in your terminal the the Express application is listening in the PORT 8000
 
-## What do I need to implement to satisfy my employer requirements?
+## Tasks to satisfy employer requirements:
 
 1. `block.js` file. In the `Block` class we are going to implement the method:
     `validate()`. 
@@ -93,8 +93,8 @@ You can check in your terminal the the Express application is listening in the P
      *  5. Resolve true or false depending if it is valid or not.
      *  Note: to access the class values inside a Promise code you need to create an auxiliary value `let self = this;`
      */
-2. `block.js` file. In the `Block` class we are going to implement the method:
-    `getBData()`.
+2. `block.js` file. In the `Block` class the method:
+    `getBData()` is implemented.
     /**
      *  Auxiliary Method to return the block body (decoding the data)
      *  Steps:
@@ -104,8 +104,8 @@ You can check in your terminal the the Express application is listening in the P
      *  3. Resolve with the data and make sure that you don't need to return the data for the `genesis block` 
      *     or Reject with an error.
      */
-3. `blockchain.js` file. In the `Blockchain` class we are going to implement the method:
-    `_addBlock(block)`.
+3. `blockchain.js` file. In the `Blockchain` class the method:
+    `_addBlock(block)` is implemented.
     /**
      * _addBlock(block) will store a block in the chain
      * @param {*} block 
@@ -118,8 +118,8 @@ You can check in your terminal the the Express application is listening in the P
      * Note: the symbol `_` in the method name indicates in the javascript convention 
      * that this method is a private method. 
      */
-4. `blockchain.js` file. In the `Blockchain` class we are going to implement the method:
-    `requestMessageOwnershipVerification(address)`
+4. `blockchain.js` file. In the `Blockchain` class the method:
+    `requestMessageOwnershipVerification(address)` is implemented.
     /**
      * The requestMessageOwnershipVerification(address) method
      * will allow you  to request a message that you will use to
@@ -128,8 +128,8 @@ You can check in your terminal the the Express application is listening in the P
      * The method return a Promise that will resolve with the message to be signed
      * @param {*} address 
      */
-5. `blockchain.js` file. In the `Blockchain` class we are going to implement the method:
-    `submitStar(address, message, signature, star)`
+5. `blockchain.js` file. In the `Blockchain` class the method:
+    `submitStar(address, message, signature, star)` is implemented.
     /**
      * The submitStar(address, message, signature, star) method
      * will allow users to register a new Block with the star object
@@ -147,24 +147,24 @@ You can check in your terminal the the Express application is listening in the P
      * @param {*} signature 
      * @param {*} star 
      */
-6. `blockchain.js` file. In the `Blockchain` class we are going to implement the method:
-    `getBlockByHash(hash)`
+6. `blockchain.js` file. In the `Blockchain` class the method:
+    `getBlockByHash(hash)` is implemented.
     /**
      * This method will return a Promise that will resolve with the Block
      *  with the hash passed as a parameter.
      * Search on the chain array for the block that has the hash.
      * @param {*} hash 
      */
-7. `blockchain.js` file. In the `Blockchain` class we are going to implement the method:
-    `getStarsByWalletAddress (address)`
+7. `blockchain.js` file. In the `Blockchain` class the method:
+    `getStarsByWalletAddress (address)` is implemented.
     /**
      * This method will return a Promise that will resolve with an array of Stars objects existing in the chain 
      * and are belongs to the owner with the wallet address passed as parameter.
      * 
      * @param {*} address 
      */
-8. `blockchain.js` file. In the `Blockchain` class we are going to implement the method:
-    `validateChain()`
+8. `blockchain.js` file. In the `Blockchain` class the method:
+    `validateChain()` is implemented.
     /**
      * This method will return a Promise that will resolve with the list of errors when validating the chain.
      * Steps to validate:
@@ -172,16 +172,15 @@ You can check in your terminal the the Express application is listening in the P
      * 2. Each Block should check the with the previousBlockHash
      */
 
-## How to test your application functionalities?
+## How to test the application functionalities?
 
-To test your application I recommend you to use POSTMAN, this tool will help you to make the requests to the API.
-Always is useful to debug your code see what is happening in your algorithm, so I will let you this video for you to check on how to do it >https://www.youtube.com/watch?v=6cOsxaNC06c . Try always to debug your code to understand what you are doing.
+To test the application, it is recommended to use POSTMAN, this tool will help make the requests to the API.
 
-1. Run your application using the command `node app.js`
+1. Run the application using the command `node app.js`
 You should see in your terminal a message indicating that the server is listening in port 8000:
 > Server Listening for port: 8000
 
-2. To make sure your application is working fine and it creates the Genesis Block you can use POSTMAN to request the Genesis block:
+2. To make sure the application is working fine and it creates the Genesis Block you can use POSTMAN to request the Genesis block:
     ![Request: http://localhost:8000/block/0 ](https://s3.amazonaws.com/video.udacity-data.com/topher/2019/April/5ca360cc_request-genesis/request-genesis.png)
 3. Make your first request of ownership sending your wallet address:
     ![Request: http://localhost:8000/requestValidation ](https://s3.amazonaws.com/video.udacity-data.com/topher/2019/April/5ca36182_request-ownership/request-ownership.png)
@@ -189,5 +188,5 @@ You should see in your terminal a message indicating that the server is listenin
     ![Use the Wallet to sign a message](https://s3.amazonaws.com/video.udacity-data.com/topher/2019/April/5ca36182_request-ownership/request-ownership.png)
 5. Submit your Star
      ![Request: http://localhost:8000/submitstar](https://s3.amazonaws.com/video.udacity-data.com/topher/2019/April/5ca365d3_signing-message/signing-message.png)
-6. Retrieve Stars owned by me
+6. Retrieve Stars owned by you
     ![Request: http://localhost:8000/blocks/<WALLET_ADDRESS>](https://s3.amazonaws.com/video.udacity-data.com/topher/2019/April/5ca362b9_retrieve-stars/retrieve-stars.png)
